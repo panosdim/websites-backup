@@ -1,0 +1,13 @@
+[Unit]
+Description=Script to periodic run backup
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+User=root
+WorkingDirectory=/opt/backup
+ExecStart=/opt/backup/backup.sh 
+
+[Install]
+WantedBy=multi-user.target
