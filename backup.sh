@@ -31,7 +31,7 @@ for db in $databases; do
 done
 
 #-- Copy NGINX sites --#
-cp -rf /usr/share/nginx/!(html|modules) $BACKUPDIR/"$DATE"
+cp -rf `ls -Ad /usr/share/nginx/* | grep -v "html" | grep -v "modules"` $BACKUPDIR/"$DATE"
 
 #-- Copy NGINX sites configurations --#
 cp -rf /etc/nginx/conf.d/* $BACKUPDIR/"$DATE"
