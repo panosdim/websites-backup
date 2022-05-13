@@ -30,6 +30,12 @@ for db in $databases; do
     fi
 done
 
+#-- Copy NGINX sites --#
+cp -rf /usr/share/nginx/* $BACKUPDIR/"$DATE"
+
+#-- Copy NGINX sites configurations --#
+cp -rf /etc/nginx/conf.d/* $BACKUPDIR/"$DATE"
+
 #-- Compress the folder that contains the databases --#
 cd $BACKUPDIR || exit
 $TAR cjfP "$DATE".tar.bz2 "$DATE"
