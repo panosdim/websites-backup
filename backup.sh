@@ -20,7 +20,8 @@ if [ ! -d $BACKUPDIR/"$DATE" ]; then
 fi
 
 #-- Dump databases into SQL files --#
-databases=$($MYSQL --defaults-file=$CNF -e "SHOW DATABASES;" | tr -d "| " | grep -v Database)
+exclude_dbs='information_schema|mysql|performance_schema|sys'
+databases=$($MYSQL --defaults-file=$CNF -e "SHOW DATABASES;" | grep -v -E '^('$exclude_dbs')$' | tr -d "| " | grep -v Database)
 
 for db in $databases; do
     if [[ "$db" != "information_schema" ]] && [[ "$db" != _* ]]; then
