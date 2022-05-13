@@ -31,8 +31,9 @@ for db in $databases; do
 done
 
 #-- Compress the folder that contains the databases --#
-$TAR cjfP $BACKUPDIR/"$DATE".tar.bz2 $BACKUPDIR/"$DATE"
-rm -rf ${BACKUPDIR:?}/"$DATE"
+cd $BACKUPDIR || exit
+$TAR cjfP "$DATE".tar.bz2 "$DATE"
+rm -rf "$DATE"
 
 #-- Delete files older than 180 days --#
 find $BACKUPDIR/* -mtime +180 -exec rm -f {} \;
