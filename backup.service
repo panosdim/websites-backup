@@ -3,8 +3,7 @@ Description=Script to periodic run backup
 
 [Service]
 Type=simple
-Restart=always
-RestartSec=5s
+Restart=no
 User=root
 WorkingDirectory=/opt/backup
 EnvironmentFile=/opt/backup/.env

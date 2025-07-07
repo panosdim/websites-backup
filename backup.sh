@@ -99,10 +99,10 @@ else
     echo "[$TIMESTAMP] ERROR: Failed to create backup archive"
 fi
 
-#-- Delete files and directories older than 180 days --#
-echo "[$TIMESTAMP] Cleaning up old backup files (older than 180 days)..."
-find $BACKUPDIR -maxdepth 1 -type f -name "*.tar.bz2" -mtime +180 -delete
-find $BACKUPDIR -maxdepth 1 -type d -name "*-*-*" -mtime +180 -exec rm -rf {} \;
+#-- Delete files and directories older than 30 days --#
+echo "[$TIMESTAMP] Cleaning up old backup files (older than 30 days)..."
+find $BACKUPDIR -maxdepth 1 -type f -name "*.tar.bz2" -mtime +30 -delete
+find $BACKUPDIR -maxdepth 1 -type d -name "*-*-*" -mtime +30 -exec rm -rf {} \;
 echo "[$TIMESTAMP] Backup process completed successfully."
 
 # Uncomment for DEBUG -- START
