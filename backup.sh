@@ -1,18 +1,11 @@
 #!/bin/bash
-# MySQL Docker Backup Script
-# Requirements:
-# 1. MySQL running in Docker container named "mysql" (or update MYSQL_CONTAINER variable)
-# 2. Set MYSQL_ROOT_PASSWORD environment variable with your MySQL root password
-#    Example: export MYSQL_ROOT_PASSWORD="your_password"
-# 3. Ensure the Docker container is running before executing this script
-#
 # Uncomment for DEBUG -- START
 #set -x
 #(
 # Uncomment for DEBUG -- END
 
 ### Logging Setup ###
-LOGFILE="/var/log/backup-sites.log"
+LOGFILE="/var/log/backup-data.log"
 exec > >(tee -a "$LOGFILE") 2>&1
 
 ### Common Setup ###
@@ -99,10 +92,38 @@ else
     echo "[$TIMESTAMP] ERROR: Failed to create backup archive"
 fi
 
-#-- Delete files and directories older than 30 days --#
-echo "[$TIMESTAMP] Cleaning up old backup files (older than 30 days)..."
-find $BACKUPDIR -maxdepth 1 -type f -name "*.tar.bz2" -mtime +30 -delete
-find $BACKUPDIR -maxdepth 1 -type d -name "*-*-*" -mtime +30 -exec rm -rf {} \;
+#-- Delete files and directories older than 180 days --#
+echo "[$TIMESTAMP] Cleaning up old backup files (older than 180 days)..."
+find $BACKUPDIR -maxdepth 1 -type f -name "*.tar.bz2" -mtime +180 -delete
+find $BACKUPDIR -maxdepth 1 -type d -name "*-*-*" -mtime +180 -exec rm -rf {} \;
+
+
+#-- Rsync folder to a remote server --#
+SRC_DIR="/mnt/data/backup"
+DEST_DIR="root@spiti.hopto.org:/mnt/storage/Oracle-Backup"
+SSH_PORT="3022"
+SSH_KEY="/home/opc/.ssh/id_rsa"
+
+echo "[$TIMESTAMP] Starting rsync backup"
+rsync -rlptDvz \
+      -e "ssh -p $SSH_PORT -i $SSH_KEY" \
+      --no-perms --no-owner --no-group \
+      --delete-after --delete-excluded \
+      --checksum \
+      "$SRC_DIR" "$DEST_DIR"
+
+RSYNC_EXIT_CODE=$?
+
+if [ $RSYNC_EXIT_CODE -ne 0 ]; then
+    echo "[$TIMESTAMP] ❌ Rsync backup failed"
+    curl -fsS --retry 3 "${HEALTHCHECK_URL}/fail" > /dev/null
+else
+    echo "[$TIMESTAMP] ✅ Rsync backup completed successfully"
+    curl -fsS --retry 3 "$HEALTHCHECK_URL" > /dev/null
+fi
+
+echo "[$TIMESTAMP] Finished rsync backup"
+
 echo "[$TIMESTAMP] Backup process completed successfully."
 
 # Uncomment for DEBUG -- START
