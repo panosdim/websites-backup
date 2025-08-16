@@ -108,23 +108,32 @@ SSH_PORT="3022"
 SSH_KEY="/home/opc/.ssh/id_rsa"
 
 log "Starting rsync backup"
-rsync -rlptDvz \
-      -e "ssh -p $SSH_PORT -i $SSH_KEY" \
+RSYNC_CMD="rsync -rlptDvz \
+      -e \"ssh -p $SSH_PORT -i $SSH_KEY -o ServerAliveInterval=60 -o ServerAliveCountMax=5 -o ExitOnForwardFailure=yes\" \
       --no-perms --no-owner --no-group \
       --delete-after --delete-excluded \
       --checksum \
-      "$SRC_DIR" "$DEST_DIR"
+      \"$SRC_DIR\" \"$DEST_DIR\""
 
-RSYNC_EXIT_CODE=$?
+# Retry loop for rsync (3 attempts)
+for attempt in 1 2 3; do
+    log "Rsync attempt $attempt..."
+    eval $RSYNC_CMD
+    RSYNC_EXIT_CODE=$?
+    if [ $RSYNC_EXIT_CODE -eq 0 ]; then
+        log "✅ Rsync backup completed successfully"
+        curl -fsS --retry 3 "$HEALTHCHECK_URL" > /dev/null
+        break
+    else
+        log "⚠️ Rsync attempt $attempt failed with code $RSYNC_EXIT_CODE"
+        sleep 30
+    fi
+done
 
 if [ $RSYNC_EXIT_CODE -ne 0 ]; then
-    log "❌ Rsync backup failed"
+    log "❌ Rsync backup failed after 3 attempts"
     curl -fsS --retry 3 "${HEALTHCHECK_URL}/fail" > /dev/null
-else
-    log "✅ Rsync backup completed successfully"
-    curl -fsS --retry 3 "$HEALTHCHECK_URL" > /dev/null
 fi
-
 log "Finished rsync backup"
 
 log "Backup process completed successfully."
