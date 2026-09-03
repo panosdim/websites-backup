@@ -67,6 +67,30 @@ rm -f "$TEMP_CNF"
 docker exec -i $MYSQL_CONTAINER rm -f /tmp/backup_mysql.cnf
 log "MySQL backup completed."
 
+### PostgreSQL Setup ###
+# Docker container name for PostgreSQL (update this to match your container name)
+POSTGRES_CONTAINER="postgres-db"
+
+log "Starting PostgreSQL database backup..."
+
+mkdir -p "$BACKUPDIR/$DATE/postgres"
+
+# Get list of non-template, non-maintenance databases
+pg_databases=$(docker exec -e PGPASSWORD="$PG_PASSWORD" -i "$POSTGRES_CONTAINER" psql -U "$PG_USER" -d postgres -tAc \
+    "SELECT datname FROM pg_database WHERE datistemplate = false AND datname != 'postgres';")
+
+for db in $pg_databases; do
+    log "Dumping PostgreSQL database: $db"
+    docker exec -e PGPASSWORD="$PG_PASSWORD" -i "$POSTGRES_CONTAINER" pg_dump -U "$PG_USER" -d "$db" >"$BACKUPDIR/$DATE/postgres/$db.sql"
+    if [ $? -eq 0 ]; then
+        log "Successfully backed up database: $db"
+    else
+        log "ERROR: Failed to backup database: $db"
+    fi
+done
+
+log "PostgreSQL backup completed."
+
 log "Starting NGINX sites backup..."
 
 #-- Copy NGINX sites --#
